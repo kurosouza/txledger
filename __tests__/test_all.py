@@ -39,8 +39,8 @@ def test_create_account_with_zero_balance():
 
 def test_add_transaction():
     transaction_log = TransactionLog()
-    johns_acct = transaction_log.create_account('john', 500)
-    james_acct = transaction_log.create_account('james', 0)
+    # johns_acct = transaction_log.create_account('john', 500)
+    # james_acct = transaction_log.create_account('james', 0)
     transaction_log.add_transaction('john', 'james', '2021-5-24 11:00', 100)
 
     assert transaction_log.get_account_balance('james') == 100
