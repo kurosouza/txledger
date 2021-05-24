@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Dict
 from datetime import date, datetime
-from uuid import uuid4
-from functools import reduce
+
+class AccountNotFoundException(Exception):
+    pass
 
 class Transaction(BaseModel):
     src_acct: str
@@ -10,29 +11,22 @@ class Transaction(BaseModel):
     tx_date: datetime
     tx_value: float
 
-class Account(BaseModel):
-    id: str = Field(default_factory = lambda: str(uuid4()))
-    name: str
-    balance: float
-
-class NonExistentAccountException(Exception):
-    pass
 
 class TransactionLog:
 
     accounts = {}
     transactions: List[Transaction] = []
 
-    def __init__(self, transactions = None):
+    def __init__(self, transactions: List[Transaction] = None):
         if transactions is not None:
-            [self.transactions.append(tx) for tx in transactions]
+            [self.add_transaction(tx) for tx in transactions]
 
 
     def _rollforward(self, to_date: datetime = datetime.now()):
         tx_accounts = {}
 
         def run_tx(tx):
-            """ Reduce function: update account balances with transaction values for tx1 and tx2 """
+            """ Execute transactions using local account dictionary """
             print("run_tx #1 - {0}".format(tx))
             
             if tx_accounts.get(tx.src_acct) is None:
@@ -44,7 +38,7 @@ class TransactionLog:
             tx_accounts[tx.src_acct] -= tx.tx_value
             tx_accounts[tx.dst_acct] += tx.tx_value
 
-        # reduce(run_tx, self.transactions)
+
         for tx in self.transactions:
             if tx.tx_date < to_date:
                 run_tx(tx) 
@@ -81,10 +75,10 @@ class TransactionLog:
         """ If accounts don't already exist, add them to the account registry """
 
         if self.accounts.get(src_acct) is None:
-            self.accounts[src_acct] = 0
+            raise AccountNotFoundException("Could not find source account: {}".format(src_acct))
 
         if self.accounts.get(dst_acct) is None:
-            self.accounts[dst_acct] = 0
+            raise AccountNotFoundException("Could not find desination account: {}".format(dst_acct))
 
         """ append to transaction log """
 
@@ -100,7 +94,7 @@ class TransactionLog:
         """ Get the balance for the specified account """
         return self.accounts[account_name]
 
-    def get_account_balance_at(self, account_name, target_date: datetime) -> float:
+    def get_account_balance_at(self, account_name, target_date_str: str) -> float:
         """ Get the balance for a given account at given date. This function works by replaying the transaction log
         to the specified date
 
@@ -110,4 +104,5 @@ class TransactionLog:
         target_date: calculate balance up to specified date
         
         """
+        target_date = datetime.strptime(target_date_str, "%Y-%m-%d %H:%M")
         return self._rollforward(target_date)[account_name]

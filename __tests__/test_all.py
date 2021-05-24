@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 import pytest
-from ledger import TransactionLog, Transaction, Account
+from ledger import TransactionLog, Transaction
 
 class User(BaseModel):
         name: str
@@ -39,8 +39,22 @@ def test_create_account_with_zero_balance():
 
 def test_add_transaction():
     transaction_log = TransactionLog()
-    # johns_acct = transaction_log.create_account('john', 500)
-    # james_acct = transaction_log.create_account('james', 0)
+    transaction_log.create_account('john')
+    transaction_log.create_account('james')
+
     transaction_log.add_transaction('john', 'james', '2021-5-24 11:00', 100)
 
     assert transaction_log.get_account_balance('james') == 100
+    assert transaction_log.get_account_balance('john') == -100
+
+
+def test_get_balance_at_date():
+    transaction_log = TransactionLog()
+    transaction_log.create_account('john')
+    transaction_log.create_account('james')
+    
+    transaction_log.add_transaction('john', 'james', '2021-1-10 08:00', 100)
+    transaction_log.add_transaction('john', 'james', '2021-2-10 08:00', 100)
+    transaction_log.add_transaction('john', 'james', '2021-3-10 08:00', 100)
+
+    assert transaction_log.get_account_balance_at('james', '2021-2-25 12:00') == 200.
