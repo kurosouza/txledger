@@ -2,10 +2,24 @@ from pydantic import BaseModel
 from typing import List, Dict
 from datetime import date, datetime
 
+
 class AccountNotFoundException(Exception):
     pass
 
+
 class Transaction(BaseModel):
+    """
+    A transaction object
+    
+    Params:
+    ======
+    src_acct:   the source account to transfer from
+    dst_acct:   the destination account to transfer to
+    tx_date:    the transaction date
+    tx_value:   the transaction value to transfer
+    
+    """
+
     src_acct: str
     dst_acct: str
     tx_date: datetime
@@ -13,22 +27,32 @@ class Transaction(BaseModel):
 
 
 class TransactionLog:
+    """
+    The transaction log: stores entire history of all transactions
+    """
 
     accounts = {}
     transactions: List[Transaction] = []
 
     def __init__(self, transactions: List[Transaction] = None):
         if transactions is not None:
+            """ Bulk load transactions:
+                - create source accounts
+                - create destination accounts
+                - add transactions
+            """
+            [self.create_account(tx.src_acct) for tx in transactions if self.accounts.get(tx.src_acct) is None]
+            [self.create_account(tx.dst_acct) for tx in transactions if self.accounts.get(tx.dst_acct) is None]
             [self.add_transaction(tx) for tx in transactions]
-
 
     def _rollforward(self, to_date: datetime = datetime.now()):
         tx_accounts = {}
 
         def run_tx(tx):
             """ Execute transactions using local account dictionary """
-            print("run_tx #1 - {0}".format(tx))
             
+            print("run_tx #1 - {0}".format(tx))
+
             if tx_accounts.get(tx.src_acct) is None:
                 tx_accounts[tx.src_acct] = 0
 
@@ -38,15 +62,13 @@ class TransactionLog:
             tx_accounts[tx.src_acct] -= tx.tx_value
             tx_accounts[tx.dst_acct] += tx.tx_value
 
-
         for tx in self.transactions:
             if tx.tx_date < to_date:
-                run_tx(tx) 
+                run_tx(tx)
 
         return tx_accounts
 
-
-    def create_account(self, name: str, balance: float = 0):        
+    def create_account(self, name: str, balance: float = 0):
         """ Create a new account
 
         Params:
@@ -57,8 +79,7 @@ class TransactionLog:
 
         self.accounts[name] = balance
 
-
-    def add_transaction(self, src_acct, dst_acct, tx_date, tx_value):
+    def add_transaction(self, tx: Transaction):
         """ 
         Add a new transaction to the transaction log. This function also updates the global account state.
         
@@ -70,15 +91,15 @@ class TransactionLog:
         tx_value:   the transaction value to transfer
         """
 
-        tx = Transaction(src_acct = src_acct, dst_acct = dst_acct, tx_date = tx_date, tx_value = tx_value)
-        
+        # tx = Transaction(src_acct = src_acct, dst_acct = dst_acct, tx_date = tx_date, tx_value = tx_value)
+
         """ If accounts don't already exist, add them to the account registry """
 
-        if self.accounts.get(src_acct) is None:
-            raise AccountNotFoundException("Could not find source account: {}".format(src_acct))
+        if self.accounts.get(tx.src_acct) is None:
+            raise AccountNotFoundException("Could not find source account: {}".format(tx.src_acct))
 
-        if self.accounts.get(dst_acct) is None:
-            raise AccountNotFoundException("Could not find desination account: {}".format(dst_acct))
+        if self.accounts.get(tx.dst_acct) is None:
+            raise AccountNotFoundException("Could not find desination account: {}".format(tx.dst_acct))
 
         """ append to transaction log """
 
@@ -88,7 +109,6 @@ class TransactionLog:
 
         self.accounts[tx.src_acct] -= tx.tx_value
         self.accounts[tx.dst_acct] += tx.tx_value
-
 
     def get_account_balance(self, account_name) -> float:
         """ Get the balance for the specified account """
