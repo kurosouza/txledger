@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from typing import List
+import pytest
+from ledger import TransactionLog, Transaction, Account
 
 class User(BaseModel):
         name: str
@@ -20,3 +22,25 @@ def test_user_list():
     user_store = UserStore()
     
     assert len(user_store.users) == 0
+
+
+def test_create_account_with_500_balance():
+    transaction_log = TransactionLog()
+    transaction_log.create_account('john wick', 500.)
+
+    assert transaction_log.get_account_balance('john wick') == 500.
+
+
+def test_create_account_with_zero_balance():
+    transaction_log = TransactionLog()
+    transaction_log.create_account('james wick')
+
+    assert transaction_log.get_account_balance('james wick') == 0.
+
+def test_add_transaction():
+    transaction_log = TransactionLog()
+    johns_acct = transaction_log.create_account('john', 500)
+    james_acct = transaction_log.create_account('james', 0)
+    transaction_log.add_transaction('john', 'james', '2021-5-24 11:00', 100)
+
+    assert transaction_log.get_account_balance('james') == 100
