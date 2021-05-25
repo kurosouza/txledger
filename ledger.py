@@ -85,13 +85,8 @@ class TransactionLog:
         
         Params:
         ======
-        src_acct:   the source account to transfer from
-        dst_acct:   the destination account to transfer to
-        tx_date:    the transaction date
-        tx_value:   the transaction value to transfer
+        tx: Transaction(tx_date, src_acct, dst_acct, tx_value)
         """
-
-        # tx = Transaction(src_acct = src_acct, dst_acct = dst_acct, tx_date = tx_date, tx_value = tx_value)
 
         """ If accounts don't already exist, add them to the account registry """
 
@@ -110,11 +105,13 @@ class TransactionLog:
         self.accounts[tx.src_acct] -= tx.tx_value
         self.accounts[tx.dst_acct] += tx.tx_value
 
-    def get_account_balance(self, account_name) -> float:
+    def get_account_balance(self, account_name: str) -> float:
         """ Get the balance for the specified account """
+        if self.accounts.get(account_name) is None:
+            raise AccountNotFoundException("This account '{}' does not exist.",format(account_name))
         return self.accounts[account_name]
 
-    def get_account_balance_at(self, account_name, target_date_str: str) -> float:
+    def get_account_balance_at(self, account_name: str, target_date_str: str) -> float:
         """ Get the balance for a given account at given date. This function works by replaying the transaction log
         to the specified date
 
@@ -125,4 +122,7 @@ class TransactionLog:
         
         """
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d %H:%M")
-        return self._rollforward(target_date)[account_name]
+        replayed_log = self._rollforward(target_date)
+        if replayed_log.get(account_name) is None:
+            raise AccountNotFoundException("Account name '{}' is invalid.".format(account_name))
+        return replayed_log[account_name]

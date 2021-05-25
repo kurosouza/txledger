@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 import pytest
-from ledger import TransactionLog, Transaction
+from ledger import TransactionLog, Transaction, AccountNotFoundException
 
 class User(BaseModel):
         name: str
@@ -58,3 +58,9 @@ def test_get_balance_at_date():
     transaction_log.add_transaction(Transaction(src_acct='john', dst_acct='james', tx_date = '2021-3-10 08:00', tx_value = 100))
 
     assert transaction_log.get_account_balance_at('james', '2021-2-25 12:00') == 200.
+
+
+def test_invalid_account_raises_account_not_found():
+    transaction_log = TransactionLog()
+    with pytest.raises(AccountNotFoundException):
+        transaction_log.get_account_balance('hendrix')
