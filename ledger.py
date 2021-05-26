@@ -49,6 +49,19 @@ class TransactionLog:
             [self.add_transaction(tx) for tx in transactions]
 
     def _rollforward(self, to_date: datetime = datetime.now(), account: str = None):
+        """ 
+        Replay all transactions starting from the beginning of the ledger. This provides a reliable way to store accurate balances for all accounts
+        while preserving the transaction history.
+
+        This method is private.
+
+        Params
+        ======
+
+        to_date: the target date to roll forward to.
+        account: a target account. Replaying only transactions concerning a specific account should still give
+                 the correct balance for that account.
+        """
         tx_accounts = {}
         tx_log = []
 
@@ -137,10 +150,30 @@ class TransactionLog:
 
 
     def get_transactions(self, account: str = None) -> List[Transaction]:
+        """
+        Get all transactions recorded on the ledger. 
+        
+        Returns: A list of transactions 
+        
+        Params
+        ======
+        account: An account name. Use this option to filter the displayed accounts by a specific account
+        
+        """
         return list(filter(lambda tx: tx.src_acct == account or tx.dst_acct == account, self.transactions))
 
 
     def get_transactions_to_date(self, account: str, target_date_str: str) -> List[Transaction]:
+        """
+        Get all transactions recorded on the ledger up to a specified date
+
+        Params
+        ======
+        account:    An account name to filter by. Only transactions to or from this account will be retrieved.
+        target_date_str: the target date in the format 'YYYY-MM-DD HH:MM. Example: 2021-12-21 08:00'
+        
+        """
+        
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d %H:%M")
         replayed_log = self._rollforward(target_date, account)
         return replayed_log[1]
