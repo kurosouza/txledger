@@ -25,6 +25,9 @@ class Transaction(BaseModel):
     tx_date: datetime
     tx_value: float
 
+    def __repr__(self):
+        return "\tdate: {}\tfrom: {}\tto: {}\tamount:{}\n".format(self.tx_date, self.src_acct, self.dst_acct, self.tx_value)
+
 
 class TransactionLog:
     """
