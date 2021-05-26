@@ -64,3 +64,21 @@ def test_invalid_account_raises_account_not_found():
     transaction_log = TransactionLog()
     with pytest.raises(AccountNotFoundException):
         transaction_log.get_account_balance('hendrix')
+
+
+def test_get_transactions_for_account():
+    tx1 = Transaction(src_acct='john', dst_acct='james', tx_date = '2021-1-10 08:00', tx_value = 100)
+    tx2 = Transaction(src_acct='peter', dst_acct='sarah', tx_date = '2021-2-10 08:00', tx_value = 50)
+    transaction_log = TransactionLog([tx1, tx2])
+    
+    assert transaction_log.get_transactions('peter') == [tx2]
+
+
+def test_get_transactions_for_account_to_date():
+    tx1 = Transaction(src_acct='john', dst_acct='james', tx_date = '2021-1-1 08:00', tx_value = 50)
+    tx2 = Transaction(src_acct='peter', dst_acct='sarah', tx_date = '2021-1-2 08:00', tx_value = 50)
+    tx3 = Transaction(src_acct='john', dst_acct='james', tx_date = '2021-1-3 08:00', tx_value = 50)
+    tx4 = Transaction(src_acct='peter', dst_acct='sarah', tx_date = '2021-1-4 08:00', tx_value = 50)
+    transaction_log = TransactionLog([tx1, tx2, tx3, tx4])
+
+    assert transaction_log.get_transactions_to_date('james', '2021-1-2 23:00') == [tx1]

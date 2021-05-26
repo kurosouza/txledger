@@ -45,8 +45,9 @@ class TransactionLog:
             [self.create_account(tx.dst_acct) for tx in transactions if self.accounts.get(tx.dst_acct) is None]
             [self.add_transaction(tx) for tx in transactions]
 
-    def _rollforward(self, to_date: datetime = datetime.now()):
+    def _rollforward(self, to_date: datetime = datetime.now(), account: str = None):
         tx_accounts = {}
+        tx_log = []
 
         def run_tx(tx):
             """ Execute transactions using local account dictionary """
@@ -64,9 +65,13 @@ class TransactionLog:
 
         for tx in self.transactions:
             if tx.tx_date < to_date:
-                run_tx(tx)
+                if account is not None and tx.dst_acct != account and tx.src_acct != account:
+                    continue
+                else:
+                    tx_log.append(tx)
+                    run_tx(tx)
 
-        return tx_accounts
+        return tx_accounts, tx_log
 
     def create_account(self, name: str, balance: float = 0):
         """ Create a new account
@@ -122,7 +127,17 @@ class TransactionLog:
         
         """
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d %H:%M")
-        replayed_log = self._rollforward(target_date)
+        replayed_log = self._rollforward(target_date)[0]
         if replayed_log.get(account_name) is None:
             raise AccountNotFoundException("Account name '{}' is invalid.".format(account_name))
         return replayed_log[account_name]
+
+
+    def get_transactions(self, account: str = None) -> List[Transaction]:
+        return list(filter(lambda tx: tx.src_acct == account or tx.dst_acct == account, self.transactions))
+
+
+    def get_transactions_to_date(self, account: str, target_date_str: str) -> List[Transaction]:
+        target_date = datetime.strptime(target_date_str, "%Y-%m-%d %H:%M")
+        replayed_log = self._rollforward(target_date, account)
+        return replayed_log[1]
